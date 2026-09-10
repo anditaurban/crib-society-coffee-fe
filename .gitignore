@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local prompt execution instructions
+PROMPT-EXECUTION.md
