@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-crib-red: #C62828;
+    --color-crib-red-dark: #8E1B1B;
+    --color-crib-ink: #0B0B0D;
+    --color-crib-charcoal: #17171A;
+    --color-crib-cream: #F4EFE7;
+    --color-crib-warm-gray: #A8A29A;
+    --color-crib-white: #FFFFFF;
+  }
+
+  body {
+    background-color: #0B0B0D;
+    color: #F4EFE7;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Custom scrollbar for operational density */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #17171A;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2C2C33;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #A8A29A;
+  }
+}
+
+@layer utilities {
+  /* Subtle textures & borders */
+  .border-crib-subtle {
+    border-color: rgba(244, 239, 231, 0.08);
+  }
+  .bg-crib-glass {
+    background-color: rgba(23, 23, 26, 0.85);
+    backdrop-filter: blur(12px);
+  }
+  /* Accessible focus ring */
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-crib-red focus-visible:ring-offset-2 focus-visible:ring-offset-crib-ink;
+  }
+}
