@@ -12,7 +12,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { productService } from '../../services/productService';
-import { MOCK_CATEGORIES } from '../../data/mockProducts';
+import { categoryService } from '../../services/categoryService';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { Modal } from '../../components/common/Modal';
@@ -27,9 +27,26 @@ export function OwnerProductsPage() {
   const { showToast } = useToast();
 
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+
+  // Load real categories from API
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const liveCats = await categoryService.getCategories();
+        setCategories(liveCats);
+        if (liveCats.length > 0 && !formData.categoryId) {
+          setFormData((prev) => ({ ...prev, categoryId: liveCats[0].id }));
+        }
+      } catch (err) {
+        console.error('Failed to load categories:', err);
+      }
+    }
+    loadCategories();
+  }, []);
 
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -43,7 +60,7 @@ export function OwnerProductsPage() {
   // Form fields
   const [formData, setFormData] = useState({
     name: '',
-    categoryId: 'espresso',
+    categoryId: 1,
     price: '',
     stock: '',
     image: '',
@@ -198,8 +215,20 @@ export function OwnerProductsPage() {
       <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
         {/* Category Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-          {MOCK_CATEGORIES.map((cat) => {
-            const isActive = selectedCategory === cat.id;
+          <button
+            type="button"
+            onClick={() => setSelectedCategory('all')}
+            className={cn(
+              'px-3.5 py-2 rounded-xl text-xs font-semibold font-display uppercase tracking-wider whitespace-nowrap transition-all',
+              selectedCategory === 'all'
+                ? 'bg-crib-red text-white font-bold shadow'
+                : 'bg-crib-charcoal text-crib-warm-gray border border-crib-border hover:text-crib-cream'
+            )}
+          >
+            All Products
+          </button>
+          {categories.map((cat) => {
+            const isActive = selectedCategory === cat.id || selectedCategory === cat.slug;
             return (
               <button
                 key={cat.id}
@@ -394,10 +423,11 @@ export function OwnerProductsPage() {
                 onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                 className="w-full bg-crib-ink border border-crib-border rounded-xl px-3 py-2 text-xs text-crib-cream focus:outline-none focus:border-crib-red"
               >
-                <option value="espresso">Espresso Bar</option>
-                <option value="signature">Signature Brews</option>
-                <option value="non_coffee">Non-Coffee</option>
-                <option value="pastry">Pastries &amp; Bites</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
               </select>
             </div>
 

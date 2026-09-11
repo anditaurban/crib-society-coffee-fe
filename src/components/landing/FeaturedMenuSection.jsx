@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { productService } from '../../services/productService';
-import { MOCK_CATEGORIES } from '../../data/mockProducts';
+import { categoryService } from '../../services/categoryService';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import { Modal } from '../common/Modal';
@@ -22,9 +22,23 @@ import {
 export function FeaturedMenuSection() {
   const { showToast } = useToast();
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [categories, setCategories] = useState([{ id: 'all', name: 'All' }]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Load real categories from API
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const liveCats = await categoryService.getCategories();
+        setCategories([{ id: 'all', name: 'All' }, ...liveCats]);
+      } catch (err) {
+        console.error('Failed to load categories for landing:', err);
+      }
+    }
+    loadCategories();
+  }, []);
 
   // Selected product for Quick View modal
   const [activeProduct, setActiveProduct] = useState(null);
@@ -101,8 +115,8 @@ export function FeaturedMenuSection() {
 
         {/* Category Filter Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 scrollbar-none">
-          {MOCK_CATEGORIES.map((category) => {
-            const isSelected = selectedCategory === category.id;
+          {categories.map((category) => {
+            const isSelected = selectedCategory === category.id || (category.slug && selectedCategory === category.slug);
             return (
               <button
                 key={category.id}

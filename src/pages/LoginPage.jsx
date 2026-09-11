@@ -73,13 +73,13 @@ export function LoginPage() {
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => fillQuickDemo('alex@cribsociety.com')}
+              onClick={() => fillQuickDemo('sarah@cribsociety.com')}
               className="px-2.5 py-1.5 rounded-lg bg-crib-ink border border-crib-border hover:border-crib-red/60 text-left transition-colors"
             >
               <div className="text-[11px] font-bold text-crib-cream flex items-center gap-1">
                 <UserCheck className="w-3 h-3 text-crib-red" /> Staff Portal
               </div>
-              <div className="text-[10px] text-crib-warm-gray truncate">alex@cribsociety.com</div>
+              <div className="text-[10px] text-crib-warm-gray truncate">sarah@cribsociety.com</div>
             </button>
 
             <button

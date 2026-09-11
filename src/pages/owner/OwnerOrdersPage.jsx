@@ -60,9 +60,10 @@ export function OwnerOrdersPage() {
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !q ||
-      o.id.toLowerCase().includes(q) ||
+      String(o.id || '').toLowerCase().includes(q) ||
+      String(o.orderNumber || '').toLowerCase().includes(q) ||
       o.customerName?.toLowerCase().includes(q) ||
-      o.items?.some((i) => i.name.toLowerCase().includes(q));
+      o.items?.some((i) => (i.name || i.productName || '').toLowerCase().includes(q));
 
     return matchesPayment && matchesSearch;
   });

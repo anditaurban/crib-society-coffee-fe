@@ -1,60 +1,83 @@
 /**
  * Auth Service
- * Source of Truth: docs/API-SPEC.md Section 2
- * POST /auth/login -> { user, token }
- * POST /auth/logout -> { success: true }
+ * Source of Truth: docs/API-INTEGRATION.md Section 3
+ * 
+ * Endpoints:
+ * - POST /auth/login
+ * - POST /auth/register
+ * - GET  /auth/me
+ * - POST /auth/logout
  */
 
-import { MOCK_USERS, MOCK_CURRENT_USER } from '../data/mockAuth';
-import { mockNetworkDelay, createApiError } from './api';
+import { apiRequest } from './api';
 
 const TOKEN_STORAGE_KEY = 'crib_auth_token';
 const USER_STORAGE_KEY = 'crib_auth_user';
 
 export const authService = {
+  /**
+   * Log in user with email & password
+   */
   async login({ email, password }) {
-    // In mock mode, find matching user or default to owner/staff
-    const user = MOCK_USERS.find(
-      (u) => u.email.toLowerCase() === email?.toLowerCase()
-    );
+    const response = await apiRequest('/auth/login', {
+      method: 'POST',
+      body: { email: email.trim(), password },
+    });
 
-    if (!user && email !== 'guest') {
-      throw createApiError('Invalid credentials. Try owner@cribsociety.com or alex@cribsociety.com', 401);
+    if (response.token && response.user) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, response.token);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(response.user));
     }
 
-    const activeUser = user || MOCK_CURRENT_USER;
-    const token = `mock_jwt_${activeUser.role}_${Date.now()}`;
+    return response;
+  },
 
-    localStorage.setItem(TOKEN_STORAGE_KEY, token);
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(activeUser));
-
-    return mockNetworkDelay({
-      user: activeUser,
-      token,
+  /**
+   * Register new user / staff member
+   */
+  async register({ name, email, password, role = 'guest' }) {
+    const response = await apiRequest('/auth/register', {
+      method: 'POST',
+      body: { name: name.trim(), email: email.trim(), password, role },
     });
+
+    if (response.token && response.user) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, response.token);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(response.user));
+    }
+
+    return response;
   },
 
+  /**
+   * Verify and fetch current authenticated user profile from backend
+   */
+  async getMe() {
+    const response = await apiRequest('/auth/me');
+    if (response.user) {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(response.user));
+    }
+    return response.user;
+  },
+
+  /**
+   * Log out user from session
+   */
   async logout() {
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
-    localStorage.removeItem(USER_STORAGE_KEY);
-    return mockNetworkDelay({ success: true });
+    try {
+      await apiRequest('/auth/logout', { method: 'POST' });
+    } catch {
+      // Ignore network errors during logout
+    } finally {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(USER_STORAGE_KEY);
+    }
+    return { success: true };
   },
 
-  async register({ name, email, password }) {
-    const newUser = {
-      id: `usr_${Date.now()}`,
-      name: name || 'Society Member',
-      email,
-      role: 'guest',
-      status: 'active',
-    };
-    MOCK_USERS.push(newUser);
-    const token = `mock_jwt_guest_${Date.now()}`;
-    localStorage.setItem(TOKEN_STORAGE_KEY, token);
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser));
-    return mockNetworkDelay({ user: newUser, token });
-  },
-
+  /**
+   * Get cached user from localStorage
+   */
   getCurrentUser() {
     const stored = localStorage.getItem(USER_STORAGE_KEY);
     if (!stored) return null;
@@ -65,15 +88,27 @@ export const authService = {
     }
   },
 
-  switchRole(role) {
-    const user = MOCK_USERS.find((u) => u.role === role) || {
-      id: `usr_${role}`,
-      name: role === 'owner' ? 'Crib Owner' : 'Alex Staff',
-      email: `${role}@cribsociety.com`,
-      role,
-      status: 'active',
+  /**
+   * Quick role switch helper for preview/demo
+   */
+  async switchRole(role) {
+    const defaultCredentials = {
+      owner: { email: 'owner@cribsociety.com', password: 'password123' },
+      staff: { email: 'sarah@cribsociety.com', password: 'password123' },
     };
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-    return user;
+
+    if (defaultCredentials[role]) {
+      try {
+        const res = await this.login(defaultCredentials[role]);
+        return res.user;
+      } catch {
+        // Fallback to local session update if server offline
+      }
+    }
+
+    const current = this.getCurrentUser() || {};
+    const updated = { ...current, role };
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updated));
+    return updated;
   },
 };

@@ -15,16 +15,18 @@ import {
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { useToast } from '../../context/ToastContext';
+import { settingService } from '../../services/settingService';
 
 export function OwnerSettingsPage() {
   const { showToast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [settings, setSettings] = useState({
-    storeName: 'Crib Society Coffee & Roasters',
+    storeName: 'Crib Society Coffee',
     tagline: 'A Rebellious Coffee Sanctum & Creative Hub',
-    address: 'Jl. Senopati No. 42, Kebayoran Baru, Jakarta Selatan 12190',
-    phone: '+62 812-9988-7766',
+    address: 'Jl. Pandanaran No. 88, Semarang',
+    phone: '+62 812-3456-7890',
     email: 'hello@cribsociety.com',
     instagram: '@cribsociety.id',
     wifiSsid: 'crib_society',
@@ -35,18 +37,54 @@ export function OwnerSettingsPage() {
     weekdayHours: '07:00 – 23:00 WIB',
     weekendHours: '07:00 – 00:00 WIB',
     receiptHeader: 'CRIB SOCIETY COFFEE & ROASTERY',
-    receiptFooter: 'Thank you for stopping by • Keep brewing rebellion',
+    receiptFooter: 'Thank you for vibing with Crib Society!',
     soundAlerts: true,
     autoPrintReceipt: true,
   });
 
-  const handleSave = (e) => {
+  useEffect(() => {
+    async function loadSettings() {
+      setIsLoading(true);
+      try {
+        const live = await settingService.getSettings();
+        if (live && Object.keys(live).length > 0) {
+          setSettings((prev) => ({
+            ...prev,
+            storeName: live.store_name || prev.storeName,
+            address: live.store_address || prev.address,
+            phone: live.store_phone || prev.phone,
+            taxRate: live.tax_rate_percent !== undefined ? Number(live.tax_rate_percent) : prev.taxRate,
+            serviceChargeRate: live.service_charge_percent !== undefined ? Number(live.service_charge_percent) : prev.serviceChargeRate,
+            receiptFooter: live.receipt_footer_text || prev.receiptFooter,
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to load live settings:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadSettings();
+  }, []);
+
+  const handleSave = async (e) => {
     e.preventDefault();
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      await settingService.updateSettings({
+        store_name: settings.storeName,
+        store_address: settings.address,
+        store_phone: settings.phone,
+        tax_rate_percent: Number(settings.taxRate) || 0,
+        service_charge_percent: Number(settings.serviceChargeRate) || 0,
+        receipt_footer_text: settings.receiptFooter,
+      });
+      showToast('Store & operational settings saved successfully to server!', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to save store settings.', 'danger');
+    } finally {
       setIsSaving(false);
-      showToast('Store & operational settings saved successfully!', 'success');
-    }, 600);
+    }
   };
 
   const handleReset = () => {

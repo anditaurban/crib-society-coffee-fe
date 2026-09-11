@@ -25,3 +25,8 @@ dist-ssr
 
 # Local prompt execution instructions
 PROMPT-EXECUTION.md
+
+# Environment files
+.env
+.env.*
+!.env.example

@@ -1,33 +1,20 @@
 /**
- * Base API Service Layer & Mock Network Dispatcher
- * Source of Truth: docs/API-SPEC.md
+ * Base API Service Layer
+ * Source of Truth: docs/API-INTEGRATION.md & docs/API-SPEC.md
  * 
- * Phase 7: API Readiness
- * - Preserves UI contracts and mock implementations
- * - Provides live HTTP client structure ready for backend connection
+ * Directly connected to Crib Society REST API Backend.
  */
 
 export const API_CONFIG = {
-  baseURL: import.meta.env.VITE_API_URL || '/api',
-  useMock: import.meta.env.VITE_USE_MOCK !== 'false',
-  timeoutMs: 8000,
+  baseURL:
+    import.meta.env.VITE_API_BASE_URL ||
+    import.meta.env.VITE_API_URL ||
+    'http://localhost:5000/api',
+  timeoutMs: 10000,
 };
 
-const SIMULATED_LATENCY_MS = 150;
-
 /**
- * Simulates network delay and returns a deep-cloned resolved promise
- */
-export async function mockNetworkDelay(data, delay = SIMULATED_LATENCY_MS) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(JSON.parse(JSON.stringify(data)));
-    }, delay);
-  });
-}
-
-/**
- * Creates standardized API Error object with HTTP status code
+ * Creates standardized API Error object with HTTP status code and details
  */
 export function createApiError(message, status = 400, details = null) {
   const error = new Error(message);
@@ -37,11 +24,25 @@ export function createApiError(message, status = 400, details = null) {
 }
 
 /**
- * Live HTTP request wrapper ready for future backend endpoint attachment
+ * Live HTTP request wrapper communicating with backend endpoints
  */
-export async function apiRequest(endpoint, { method = 'GET', body, headers = {} } = {}) {
+export async function apiRequest(endpoint, { method = 'GET', body, headers = {}, params = null } = {}) {
   const token = localStorage.getItem('crib_auth_token');
-  const url = `${API_CONFIG.baseURL}${endpoint}`;
+
+  let queryString = '';
+  if (params && typeof params === 'object') {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        searchParams.append(key, value);
+      }
+    });
+    const qs = searchParams.toString();
+    if (qs) queryString = `?${qs}`;
+  }
+
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${API_CONFIG.baseURL}${cleanEndpoint}${queryString}`;
 
   const requestHeaders = {
     'Content-Type': 'application/json',
@@ -51,11 +52,17 @@ export async function apiRequest(endpoint, { method = 'GET', body, headers = {} 
   };
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeoutMs);
+
     const response = await fetch(url, {
       method,
       headers: requestHeaders,
       body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     const data = await response.json().catch(() => ({}));
 
@@ -69,7 +76,10 @@ export async function apiRequest(endpoint, { method = 'GET', body, headers = {} 
 
     return data;
   } catch (err) {
+    if (err.name === 'AbortError') {
+      throw createApiError('Network request timed out. Please check server connection.', 408);
+    }
     if (err.status) throw err;
-    throw createApiError(err.message || 'Network connection failed', 500);
+    throw createApiError(err.message || 'Unable to connect to backend server', 500);
   }
 }

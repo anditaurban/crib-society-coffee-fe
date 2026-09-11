@@ -90,10 +90,12 @@ export function StaffOrdersPage() {
   const filteredOrders = orders.filter((order) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
-    const matchesId = order.id.toLowerCase().includes(q);
+    const matchesId =
+      String(order.id || '').toLowerCase().includes(q) ||
+      String(order.orderNumber || '').toLowerCase().includes(q);
     const matchesCustomer = order.customerName?.toLowerCase().includes(q);
     const matchesItem = order.items?.some((item) =>
-      item.name.toLowerCase().includes(q)
+      (item.name || item.productName || '').toLowerCase().includes(q)
     );
     return matchesId || matchesCustomer || matchesItem;
   });

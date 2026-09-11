@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ShoppingBag, ChevronRight, Sparkles, Terminal, CheckCircle2 } from 'lucide-react';
 import { productService } from '../services/productService';
 import { orderService } from '../services/orderService';
-import { MOCK_CATEGORIES } from '../data/mockProducts';
+import { categoryService } from '../services/categoryService';
 import { ProductCatalog } from '../components/pos/ProductCatalog';
 import { CartPanel } from '../components/pos/CartPanel';
 import { PaymentModal } from '../components/pos/PaymentModal';
@@ -17,11 +17,25 @@ export function PosPage() {
 
   // Catalog State
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([{ id: 'all', name: 'All Menu' }]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [onlyInStock, setOnlyInStock] = useState(false);
+
+  // Load real categories from API
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const liveCats = await categoryService.getCategories();
+        setCategories([{ id: 'all', name: 'All Menu' }, ...liveCats]);
+      } catch (err) {
+        console.error('Failed to load categories:', err);
+      }
+    }
+    loadCategories();
+  }, []);
 
   // Cart State
   const [cartItems, setCartItems] = useState([]);
@@ -129,22 +143,27 @@ export function PosPage() {
       const response = await orderService.createOrder({
         items: cartItems,
         paymentMethod: paymentData.paymentMethod,
-        notes: paymentData.notes,
         customerName: paymentData.customerName,
+        customerPhone: paymentData.customerPhone,
+        cashTendered: paymentData.cashTendered,
+        cashReceived: paymentData.cashTendered,
+        notes: paymentData.notes,
+        orderType: paymentData.orderType,
       });
 
       const newOrder = {
         ...response.order,
         orderType: paymentData.orderType,
         cashTendered: paymentData.cashTendered,
-        changeAmount: paymentData.changeAmount,
+        changeAmount: response.order?.changeAmount ?? paymentData.changeAmount,
       };
 
       setCompletedOrder(newOrder);
       setIsPaymentOpen(false);
       setIsMobileCartOpen(false);
       setIsReceiptOpen(true);
-      showToast(`Order ${newOrder.id} successfully recorded!`, 'success');
+      showToast(`Order #${newOrder.id} successfully recorded!`, 'success');
+      loadProducts();
     } catch (err) {
       showToast(err.message || 'Payment failed. Please retry.', 'danger');
     } finally {
@@ -199,7 +218,7 @@ export function PosPage() {
         <div className="lg:col-span-7 xl:col-span-8 min-w-0">
           <ProductCatalog
             products={products}
-            categories={MOCK_CATEGORIES}
+            categories={categories}
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
             searchQuery={searchQuery}
