@@ -5,11 +5,13 @@
  * Directly connected to Crib Society REST API Backend.
  */
 
+import { COLLECTION_BASE_URL } from '../config/collection';
+
 export const API_CONFIG = {
   baseURL:
     import.meta.env.VITE_API_BASE_URL ||
     import.meta.env.VITE_API_URL ||
-    'http://localhost:5000/api',
+    COLLECTION_BASE_URL,
   timeoutMs: 10000,
 };
 
