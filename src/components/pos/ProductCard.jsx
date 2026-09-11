@@ -74,7 +74,7 @@ export function ProductCard({ product, onAddToCart, cartQuantity = 0 }) {
       <div className="p-3.5 flex flex-col flex-1 justify-between">
         <div>
           <span className="text-[10px] uppercase font-mono tracking-widest text-crib-warm-gray/80 block mb-0.5">
-            {product.categoryId?.replace('_', ' ')}
+            {product.categoryName || (typeof product.categoryId === 'string' ? product.categoryId.replace('_', ' ') : `Category #${product.categoryId}`)}
           </span>
           <h3 className="text-sm font-semibold font-display text-crib-cream line-clamp-2 leading-snug">
             {product.name}

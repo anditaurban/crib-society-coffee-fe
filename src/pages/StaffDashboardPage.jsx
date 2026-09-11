@@ -74,7 +74,7 @@ export function StaffDashboardPage() {
     setIsUpdatingStatus(true);
     try {
       await orderService.updateOrderStatus(orderId, newStatus);
-      showToast(`Order ${orderId} updated to ${newStatus.replace('_', ' ')}.`, 'success');
+      showToast(`Order ${orderId} updated to ${String(newStatus || '').replace('_', ' ')}.`, 'success');
       // Update local state
       setOrders((prev) =>
         prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))

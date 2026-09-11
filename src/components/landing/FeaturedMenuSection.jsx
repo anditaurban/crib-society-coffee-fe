@@ -207,7 +207,7 @@ export function FeaturedMenuSection() {
                         </Badge>
                       ) : (
                         <Badge variant="neutral" size="sm">
-                          {product.categoryId.replace('_', ' ')}
+                          {product.categoryName || (typeof product.categoryId === 'string' ? product.categoryId.replace('_', ' ') : `Category #${product.categoryId}`)}
                         </Badge>
                       )}
                     </div>
@@ -296,8 +296,8 @@ export function FeaturedMenuSection() {
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-3 left-3">
-                  <Badge variant="primary" size="sm">
-                    {activeProduct.categoryId}
+                  <Badge variant="neutral" size="sm">
+                    {activeProduct.categoryName || activeProduct.categoryId}
                   </Badge>
                 </div>
               </div>

@@ -324,7 +324,7 @@ export function OwnerProductsPage() {
                     </td>
 
                     <td className="py-3 px-4 capitalize text-crib-warm-gray">
-                      {p.categoryId?.replace('_', ' ')}
+                      {p.categoryName || (typeof p.categoryId === 'string' ? p.categoryId.replace('_', ' ') : `Category #${p.categoryId}`)}
                     </td>
 
                     <td className="py-3 px-4 font-bold text-crib-cream">
